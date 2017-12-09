@@ -1,3 +1,4 @@
+coding="utf-8"
 from PIL import Image,ImageDraw
 
 def readfile(filename):
@@ -277,4 +278,9 @@ def draw2d(data,labels,jpeg='mds2d.jpg'):
     x=(data[i][0]+0.5)*1000
     y=(data[i][1]+0.5)*1000
     draw.text((x,y),labels[i],(0,0,0))
-  img.save(jpeg,'JPEG')  
+  img.save(jpeg,'JPEG')
+
+
+
+blogname,words,data = readfile('blogdata1.txt')
+clust = hcluster(data)
