@@ -1,6 +1,8 @@
+#coding=utf-8
 import feedparser
 import re
-
+from numpy import *
+import nnmf
 
 feedlist=['http://today.reuters.com/rss/topNews',
           'http://today.reuters.com/rss/domesticNews',
@@ -37,9 +39,9 @@ def separatewords(text):
   return [s.lower() for s in splitter.split(text) if len(s)>3]
 
 def getarticlewords():
-  allwords={}
-  articlewords=[]
-  articletitles=[]
+  allwords={} #所有单词次数
+  articlewords=[] #每篇文章中的单词次数
+  articletitles=[] #所有文章标题
   ec=0
   # Loop over every feed
   for feed in feedlist:
@@ -139,3 +141,13 @@ def showarticles(titles,toppatterns,patternnames,out='articles.txt'):
     outfile.write('\n')
     
   outfile.close()
+
+#allwords,articlewords,articletitles = getarticlewords()
+#makematrix(allw=allwords,articlew=articletitles)
+
+m1=matrix([[1,2,3],[4,5,6]])
+m2=matrix([[1,2],[3,4],[5,6]])
+print m1*m2
+w,h=nnmf.factorize(m1*m2,pc=3,iter=100)
+
+

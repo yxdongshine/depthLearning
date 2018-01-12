@@ -74,14 +74,14 @@ def matchcount(interest1,interest2):
     if v in l2: x+=1
   return x
 
-yahookey="YOUR API KEY"
+yahookey="dj0yJmk9eEhQSGhCN1Y0aGtQJmQ9WVdrOVpYTTBkRlEzTjJjbWNHbzlNQS0tJnM9Y29uc3VtZXJzZWNyZXQmeD0xNA--"
 from xml.dom.minidom import parseString
 from urllib import urlopen,quote_plus
 
 loc_cache={}
 def getlocation(address):
   if address in loc_cache: return loc_cache[address]
-  data=urlopen('http://api.local.yahoo.com/MapsService/V1/'+\
+  data=urlopen('http://local.yahooapis.com/MapsService/V1/'+\
                'geocode?appid=%s&location=%s' %
                (yahookey,quote_plus(address))).read()
   doc=parseString(data)
@@ -97,6 +97,11 @@ def milesdistance(a1,a2):
   longdif=53.0*(long2-long1)
   return (latdif**2+longdif**2)**.5
 
+def stringdistance(str1,str2):
+    length1=len(str1)
+    length2=len(str2)
+    return (length1**2+length2**2)**.5
+
 def loadnumerical():
   oldrows=loadmatch('matchmaker.csv')
   newrows=[]
@@ -105,7 +110,7 @@ def loadnumerical():
     data=[float(d[0]),yesno(d[1]),yesno(d[2]),
           float(d[5]),yesno(d[6]),yesno(d[7]),
           matchcount(d[3],d[8]),
-          milesdistance(d[4],d[9]),
+          stringdistance(d[4],d[9]),
           row.match]
     newrows.append(matchrow(data))
   return newrows
@@ -166,3 +171,26 @@ def getoffset(rows,gamma=10):
   sum1=sum(sum([rbf(v1,v2,gamma) for v1 in l1]) for v2 in l1)
   
   return (1.0/(len(l1)**2))*sum1-(1.0/(len(l0)**2))*sum0
+
+
+agesonly=loadmatch('agesonly.csv',allnum=True)
+#matchmaker=loadmatch('matchmaker.csv')
+#plotagematches(agesonly)
+
+#开始 单特征年龄线性分类
+#lineartrain(agesonly)
+#avgs=[[26.9,35.8],[35.4,33.1]]
+#dpclassify([30,30],avgs)
+#getlocation()
+#结束 单特征年龄线性分类
+
+#开始 多特征线性分类 数据缩放化
+numericalset=loadnumerical()
+scaledset,scalef=scaledata(numericalset)
+avgs=lineartrain(scaledset)
+print numericalset[0].data
+print numericalset[0].match
+print dpclassify(scalef(numericalset[0]),avgs)
+#结束 多特征线性分类 数据缩放化
+
+#nlclassify([30,30],agesonly,0.1)

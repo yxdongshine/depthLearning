@@ -69,7 +69,7 @@ def evaluate(sess, X, Y):
 
     predicted = tf.cast(tf.arg_max(inference(X), 1), tf.int32)
 
-    print sess.run(tf.reduce_mean(tf.cast(tf.equal(predicted, Y), tf.float32)))
+    print (sess.run(tf.reduce_mean(tf.cast(tf.equal(predicted, Y), tf.float32))))
 
 
 # Launch the graph in a session, setup boilerplate
@@ -91,8 +91,7 @@ with tf.Session() as sess:
         sess.run([train_op])
         # for debugging and learning purposes, see how the loss gets decremented thru training steps
         if step % 10 == 0:
-            print "loss: ", sess.run([total_loss])
-
+            print ("loss: ", sess.run([total_loss]))
     evaluate(sess, X, Y)
 
     coord.request_stop()

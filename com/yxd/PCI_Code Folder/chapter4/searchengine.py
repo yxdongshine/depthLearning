@@ -1,8 +1,11 @@
+#coding=utf-8
 import urllib2
-from BeautifulSoup import *
+from bs4 import BeautifulSoup,Tag,CData;
 from urlparse import urljoin
-from pysqlite2 import dbapi2 as sqlite
+#http://blog.csdn.net/u013045749/article/details/46119685
+from sqlite3 import dbapi2 as sqlite
 import nn
+
 mynet=nn.searchnet('nn.db')
 
 # Create a list of words to ignore
@@ -104,7 +107,7 @@ class crawler:
           print "Could not open %s" % page
           continue
         try:
-          soup=BeautifulSoup(c.read())
+          soup = BeautifulSoup(c.read(), "html")
           self.addtoindex(page,soup)
   
           links=soup('a')
@@ -132,6 +135,7 @@ class crawler:
     self.con.execute('create table wordlocation(urlid,wordid,location)')
     self.con.execute('create table link(fromid integer,toid integer)')
     self.con.execute('create table linkwords(wordid,linkid)')
+
     self.con.execute('create index wordidx on wordlist(word)')
     self.con.execute('create index urlidx on urllist(url)')
     self.con.execute('create index wordurlidx on wordlocation(wordid)')
@@ -304,3 +308,11 @@ class searcher:
     nnres=mynet.getresult(wordids,urlids)
     scores=dict([(urlids[i],nnres[i]) for i in range(len(urlids))])
     return self.normalizescores(scores)
+
+#开始调用
+crawler=crawler('searchindex.db')
+#crawler.createindextables()
+pagelist=[['http://en.xjtu.edu.cn/'],
+          ['http://www.lib.xjtu.edu.cn/'],
+          ['http://en.wikipedia.org/wiki/Xi%27an_Jiaotong_University']]
+crawler.crawl(pagelist[0])
