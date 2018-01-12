@@ -1,283 +1,330 @@
-import svmc
-from svmc import C_SVC, NU_SVC, ONE_CLASS, EPSILON_SVR, NU_SVR
-from svmc import LINEAR, POLY, RBF, SIGMOID
-from math import exp, fabs
+#!/usr/bin/env python
 
-def _int_array(seq):
-	size = len(seq)
-	array = svmc.new_int(size)
-	i = 0
-	for item in seq:
-		svmc.int_setitem(array,i,item)
-		i = i + 1
-	return array
+from ctypes import *
+from ctypes.util import find_library
+from os import path
+import sys
 
-def _double_array(seq):
-	size = len(seq)
-	array = svmc.new_double(size)
-	i = 0
-	for item in seq:
-		svmc.double_setitem(array,i,item)
-		i = i + 1
-	return array
+if sys.version_info[0] >= 3:
+	xrange = range
 
-def _free_int_array(x):
-	if x != 'NULL' and x != None:
-		svmc.delete_int(x)
+__all__ = ['libsvm', 'svm_problem', 'svm_parameter',
+           'toPyModel', 'gen_svm_nodearray', 'print_null', 'svm_node', 'C_SVC',
+           'EPSILON_SVR', 'LINEAR', 'NU_SVC', 'NU_SVR', 'ONE_CLASS',
+           'POLY', 'PRECOMPUTED', 'PRINT_STRING_FUN', 'RBF',
+           'SIGMOID', 'c_double', 'svm_model']
 
-def _free_double_array(x):
-	if x != 'NULL' and x != None:
-		svmc.delete_double(x)
-
-def _int_array_to_list(x,n):
-	return map(svmc.int_getitem,[x]*n,range(n))
-
-def _double_array_to_list(x,n):
-	return map(svmc.double_getitem,[x]*n,range(n))
-
-class svm_parameter:
-	
-	# default values
-	default_parameters = {
-	'svm_type' : C_SVC,
-	'kernel_type' : RBF,
-	'degree' : 3,
-	'gamma' : 0,		# 1/k
-	'coef0' : 0,
-	'nu' : 0.5,
-	'cache_size' : 40,
-	'C' : 1,
-	'eps' : 1e-3,
-	'p' : 0.1,
-	'shrinking' : 1,
-	'nr_weight' : 0,
-	'weight_label' : [],
-	'weight' : [],
-	'probability' : 0
-	}
-
-	def __init__(self,**kw):
-		self.__dict__['param'] = svmc.new_svm_parameter()
-		for attr,val in self.default_parameters.items():
-			setattr(self,attr,val)
-		for attr,val in kw.items():
-			setattr(self,attr,val)
-
-	def __getattr__(self,attr):
-		get_func = getattr(svmc,'svm_parameter_%s_get' % (attr))
-		return get_func(self.param)
-
-	def __setattr__(self,attr,val):
-
-		if attr == 'weight_label':
-			self.__dict__['weight_label_len'] = len(val)
-			val = _int_array(val)
-			_free_int_array(self.weight_label)
-		elif attr == 'weight':
-			self.__dict__['weight_len'] = len(val)
-			val = _double_array(val)
-			_free_double_array(self.weight)
-
-		set_func = getattr(svmc,'svm_parameter_%s_set' % (attr))
-		set_func(self.param,val)
-
-	def __repr__(self):
-		ret = '<svm_parameter:'
-		for name in dir(svmc):
-			if name[:len('svm_parameter_')] == 'svm_parameter_' and name[-len('_set'):] == '_set':
-				attr = name[len('svm_parameter_'):-len('_set')]
-				if attr == 'weight_label':
-					ret = ret+' weight_label = %s,' % _int_array_to_list(self.weight_label,self.weight_label_len)
-				elif attr == 'weight':
-					ret = ret+' weight = %s,' % _double_array_to_list(self.weight,self.weight_len)
-				else:
-					ret = ret+' %s = %s,' % (attr,getattr(self,attr))
-		return ret+'>'
-
-	def __del__(self):
-		_free_int_array(self.weight_label)
-		_free_double_array(self.weight)
-		svmc.delete_svm_parameter(self.param)
-
-def _convert_to_svm_node_array(x):
-	""" convert a sequence or mapping to an svm_node array """
-	import operator
-
-	# Find non zero elements
-	iter_range = []
-	if type(x) == dict:
-		for k, v in x.iteritems():
-# all zeros kept due to the precomputed kernel; no good solution yet
-#			if v != 0:
-				iter_range.append( k )
-	elif operator.isSequenceType(x):
-		for j in range(len(x)):
-#			if x[j] != 0:
-				iter_range.append( j )
+try:
+	dirname = path.dirname(path.abspath(__file__))
+	if sys.platform == 'win32':
+		libsvm = CDLL(path.join(dirname, r'..\windows\libsvm.dll'))
 	else:
-		raise TypeError,"data must be a mapping or a sequence"
+		libsvm = CDLL(path.join(dirname, '../libsvm.so.2'))
+except:
+# For unix the prefix 'lib' is not considered.
+	if find_library('svm'):
+		libsvm = CDLL(find_library('svm'))
+	elif find_library('libsvm'):
+		libsvm = CDLL(find_library('libsvm'))
+	else:
+		raise Exception('LIBSVM library not found.')
 
-	iter_range.sort()
-	data = svmc.svm_node_array(len(iter_range)+1)
-	svmc.svm_node_array_set(data,len(iter_range),-1,0)
+C_SVC = 0
+NU_SVC = 1
+ONE_CLASS = 2
+EPSILON_SVR = 3
+NU_SVR = 4
 
-	j = 0
-	for k in iter_range:
-		svmc.svm_node_array_set(data,j,k,x[k])
-		j = j + 1
-	return data
+LINEAR = 0
+POLY = 1
+RBF = 2
+SIGMOID = 3
+PRECOMPUTED = 4
 
-class svm_problem:
-	def __init__(self,y,x):
-		assert len(y) == len(x)
-		self.prob = prob = svmc.new_svm_problem()
-		self.size = size = len(y)
+PRINT_STRING_FUN = CFUNCTYPE(None, c_char_p)
+def print_null(s):
+	return
 
-		self.y_array = y_array = svmc.new_double(size)
-		for i in range(size):
-			svmc.double_setitem(y_array,i,y[i])
+def genFields(names, types):
+	return list(zip(names, types))
 
-		self.x_matrix = x_matrix = svmc.svm_node_matrix(size)
-		self.data = []
-		self.maxlen = 0;
-		for i in range(size):
-			data = _convert_to_svm_node_array(x[i])
-			self.data.append(data);
-			svmc.svm_node_matrix_set(x_matrix,i,data)
-			if type(x[i]) == dict:
-				if (len(x[i]) > 0):
-					self.maxlen = max(self.maxlen,max(x[i].keys()))
+def fillprototype(f, restype, argtypes):
+	f.restype = restype
+	f.argtypes = argtypes
+
+class svm_node(Structure):
+	_names = ["index", "value"]
+	_types = [c_int, c_double]
+	_fields_ = genFields(_names, _types)
+
+	def __str__(self):
+		return '%d:%g' % (self.index, self.value)
+
+def gen_svm_nodearray(xi, feature_max=None, isKernel=None):
+	if isinstance(xi, dict):
+		index_range = xi.keys()
+	elif isinstance(xi, (list, tuple)):
+		if not isKernel:
+			xi = [0] + xi  # idx should start from 1
+		index_range = range(len(xi))
+	else:
+		raise TypeError('xi should be a dictionary, list or tuple')
+
+	if feature_max:
+		assert(isinstance(feature_max, int))
+		index_range = filter(lambda j: j <= feature_max, index_range)
+	if not isKernel:
+		index_range = filter(lambda j:xi[j] != 0, index_range)
+
+	index_range = sorted(index_range)
+	ret = (svm_node * (len(index_range)+1))()
+	ret[-1].index = -1
+	for idx, j in enumerate(index_range):
+		ret[idx].index = j
+		ret[idx].value = xi[j]
+	max_idx = 0
+	if index_range:
+		max_idx = index_range[-1]
+	return ret, max_idx
+
+class svm_problem(Structure):
+	_names = ["l", "y", "x"]
+	_types = [c_int, POINTER(c_double), POINTER(POINTER(svm_node))]
+	_fields_ = genFields(_names, _types)
+
+	def __init__(self, y, x, isKernel=None):
+		if len(y) != len(x):
+			raise ValueError("len(y) != len(x)")
+		self.l = l = len(y)
+
+		max_idx = 0
+		x_space = self.x_space = []
+		for i, xi in enumerate(x):
+			tmp_xi, tmp_idx = gen_svm_nodearray(xi,isKernel=isKernel)
+			x_space += [tmp_xi]
+			max_idx = max(max_idx, tmp_idx)
+		self.n = max_idx
+
+		self.y = (c_double * l)()
+		for i, yi in enumerate(y): self.y[i] = yi
+
+		self.x = (POINTER(svm_node) * l)()
+		for i, xi in enumerate(self.x_space): self.x[i] = xi
+
+class svm_parameter(Structure):
+	_names = ["svm_type", "kernel_type", "degree", "gamma", "coef0",
+			"cache_size", "eps", "C", "nr_weight", "weight_label", "weight",
+			"nu", "p", "shrinking", "probability"]
+	_types = [c_int, c_int, c_int, c_double, c_double,
+			c_double, c_double, c_double, c_int, POINTER(c_int), POINTER(c_double),
+			c_double, c_double, c_int, c_int]
+	_fields_ = genFields(_names, _types)
+
+	def __init__(self, options = None):
+		if options == None:
+			options = ''
+		self.parse_options(options)
+
+	def __str__(self):
+		s = ''
+		attrs = svm_parameter._names + list(self.__dict__.keys())
+		values = map(lambda attr: getattr(self, attr), attrs)
+		for attr, val in zip(attrs, values):
+			s += (' %s: %s\n' % (attr, val))
+		s = s.strip()
+
+		return s
+
+	def set_to_default_values(self):
+		self.svm_type = C_SVC;
+		self.kernel_type = RBF
+		self.degree = 3
+		self.gamma = 0
+		self.coef0 = 0
+		self.nu = 0.5
+		self.cache_size = 100
+		self.C = 1
+		self.eps = 0.001
+		self.p = 0.1
+		self.shrinking = 1
+		self.probability = 0
+		self.nr_weight = 0
+		self.weight_label = None
+		self.weight = None
+		self.cross_validation = False
+		self.nr_fold = 0
+		self.print_func = cast(None, PRINT_STRING_FUN)
+
+	def parse_options(self, options):
+		if isinstance(options, list):
+			argv = options
+		elif isinstance(options, str):
+			argv = options.split()
+		else:
+			raise TypeError("arg 1 should be a list or a str.")
+		self.set_to_default_values()
+		self.print_func = cast(None, PRINT_STRING_FUN)
+		weight_label = []
+		weight = []
+
+		i = 0
+		while i < len(argv):
+			if argv[i] == "-s":
+				i = i + 1
+				self.svm_type = int(argv[i])
+			elif argv[i] == "-t":
+				i = i + 1
+				self.kernel_type = int(argv[i])
+			elif argv[i] == "-d":
+				i = i + 1
+				self.degree = int(argv[i])
+			elif argv[i] == "-g":
+				i = i + 1
+				self.gamma = float(argv[i])
+			elif argv[i] == "-r":
+				i = i + 1
+				self.coef0 = float(argv[i])
+			elif argv[i] == "-n":
+				i = i + 1
+				self.nu = float(argv[i])
+			elif argv[i] == "-m":
+				i = i + 1
+				self.cache_size = float(argv[i])
+			elif argv[i] == "-c":
+				i = i + 1
+				self.C = float(argv[i])
+			elif argv[i] == "-e":
+				i = i + 1
+				self.eps = float(argv[i])
+			elif argv[i] == "-p":
+				i = i + 1
+				self.p = float(argv[i])
+			elif argv[i] == "-h":
+				i = i + 1
+				self.shrinking = int(argv[i])
+			elif argv[i] == "-b":
+				i = i + 1
+				self.probability = int(argv[i])
+			elif argv[i] == "-q":
+				self.print_func = PRINT_STRING_FUN(print_null)
+			elif argv[i] == "-v":
+				i = i + 1
+				self.cross_validation = 1
+				self.nr_fold = int(argv[i])
+				if self.nr_fold < 2:
+					raise ValueError("n-fold cross validation: n must >= 2")
+			elif argv[i].startswith("-w"):
+				i = i + 1
+				self.nr_weight += 1
+				weight_label += [int(argv[i-1][2:])]
+				weight += [float(argv[i])]
 			else:
-				self.maxlen = max(self.maxlen,len(x[i]))
+				raise ValueError("Wrong options")
+			i += 1
 
-		svmc.svm_problem_l_set(prob,size)
-		svmc.svm_problem_y_set(prob,y_array)
-		svmc.svm_problem_x_set(prob,x_matrix)
+		libsvm.svm_set_print_string_function(self.print_func)
+		self.weight_label = (c_int*self.nr_weight)()
+		self.weight = (c_double*self.nr_weight)()
+		for i in range(self.nr_weight):
+			self.weight[i] = weight[i]
+			self.weight_label[i] = weight_label[i]
 
-	def __repr__(self):
-		return "<svm_problem: size = %s>" % (self.size)
+class svm_model(Structure):
+	_names = ['param', 'nr_class', 'l', 'SV', 'sv_coef', 'rho',
+			'probA', 'probB', 'sv_indices', 'label', 'nSV', 'free_sv']
+	_types = [svm_parameter, c_int, c_int, POINTER(POINTER(svm_node)),
+			POINTER(POINTER(c_double)), POINTER(c_double),
+			POINTER(c_double), POINTER(c_double), POINTER(c_int),
+			POINTER(c_int), POINTER(c_int), c_int]
+	_fields_ = genFields(_names, _types)
+
+	def __init__(self):
+		self.__createfrom__ = 'python'
 
 	def __del__(self):
-		svmc.delete_svm_problem(self.prob)
-		svmc.delete_double(self.y_array)
-		for i in range(self.size):
-			svmc.svm_node_array_destroy(self.data[i])
-		svmc.svm_node_matrix_destroy(self.x_matrix)
+		# free memory created by C to avoid memory leak
+		if hasattr(self, '__createfrom__') and self.__createfrom__ == 'C':
+			libsvm.svm_free_and_destroy_model(pointer(self))
 
-class svm_model:
-	def __init__(self,arg1,arg2=None):
-		if arg2 == None:
-			# create model from file
-			filename = arg1
-			self.model = svmc.svm_load_model(filename)
-		else:
-			# create model from problem and parameter
-			prob,param = arg1,arg2
-			self.prob = prob
-			if param.gamma == 0:
-				param.gamma = 1.0/prob.maxlen
-			msg = svmc.svm_check_parameter(prob.prob,param.param)
-			if msg: raise ValueError, msg
-			self.model = svmc.svm_train(prob.prob,param.param)
-
-		#setup some classwide variables
-		self.nr_class = svmc.svm_get_nr_class(self.model)
-		self.svm_type = svmc.svm_get_svm_type(self.model)
-		#create labels(classes)
-		intarr = svmc.new_int(self.nr_class)
-		svmc.svm_get_labels(self.model,intarr)
-		self.labels = _int_array_to_list(intarr, self.nr_class)
-		svmc.delete_int(intarr)
-		#check if valid probability model
-		self.probability = svmc.svm_check_probability_model(self.model)
-
-	def predict(self,x):
-		data = _convert_to_svm_node_array(x)
-		ret = svmc.svm_predict(self.model,data)
-		svmc.svm_node_array_destroy(data)
-		return ret
-
+	def get_svm_type(self):
+		return libsvm.svm_get_svm_type(self)
 
 	def get_nr_class(self):
-		return self.nr_class
+		return libsvm.svm_get_nr_class(self)
+
+	def get_svr_probability(self):
+		return libsvm.svm_get_svr_probability(self)
 
 	def get_labels(self):
-		if self.svm_type == NU_SVR or self.svm_type == EPSILON_SVR or self.svm_type == ONE_CLASS:
-			raise TypeError, "Unable to get label from a SVR/ONE_CLASS model"
-		return self.labels
-		
-	def predict_values_raw(self,x):
-		#convert x into svm_node, allocate a double array for return
-		n = self.nr_class*(self.nr_class-1)//2
-		data = _convert_to_svm_node_array(x)
-		dblarr = svmc.new_double(n)
-		svmc.svm_predict_values(self.model, data, dblarr)
-		ret = _double_array_to_list(dblarr, n)
-		svmc.delete_double(dblarr)
-		svmc.svm_node_array_destroy(data)
-		return ret
+		nr_class = self.get_nr_class()
+		labels = (c_int * nr_class)()
+		libsvm.svm_get_labels(self, labels)
+		return labels[:nr_class]
 
-	def predict_values(self,x):
-		v=self.predict_values_raw(x)
-		if self.svm_type == NU_SVR or self.svm_type == EPSILON_SVR or self.svm_type == ONE_CLASS:
-			return v[0]
-		else: #self.svm_type == C_SVC or self.svm_type == NU_SVC
-			count = 0
-			d = {}
-			for i in range(len(self.labels)):
-				for j in range(i+1, len(self.labels)):
-					d[self.labels[i],self.labels[j]] = v[count]
-					d[self.labels[j],self.labels[i]] = -v[count]
-					count += 1
-			return  d
+	def get_sv_indices(self):
+		total_sv = self.get_nr_sv()
+		sv_indices = (c_int * total_sv)()
+		libsvm.svm_get_sv_indices(self, sv_indices)
+		return sv_indices[:total_sv]
 
-	def predict_probability(self,x):
-		#c code will do nothing on wrong type, so we have to check ourself
-		if self.svm_type == NU_SVR or self.svm_type == EPSILON_SVR:
-			raise TypeError, "call get_svr_probability or get_svr_pdf for probability output of regression"
-		elif self.svm_type == ONE_CLASS:
-			raise TypeError, "probability not supported yet for one-class problem"
-		#only C_SVC,NU_SVC goes in
-		if not self.probability:
-			raise TypeError, "model does not support probabiliy estimates"
+	def get_nr_sv(self):
+		return libsvm.svm_get_nr_sv(self)
 
-		#convert x into svm_node, alloc a double array to receive probabilities
-		data = _convert_to_svm_node_array(x)
-		dblarr = svmc.new_double(self.nr_class)
-		pred = svmc.svm_predict_probability(self.model, data, dblarr)
-		pv = _double_array_to_list(dblarr, self.nr_class)
-		svmc.delete_double(dblarr)
-		svmc.svm_node_array_destroy(data)
-		p = {}
-		for i in range(len(self.labels)):
-			p[self.labels[i]] = pv[i]
-		return pred, p
-	
-	def get_svr_probability(self):
-		#leave the Error checking to svm.cpp code
-		ret = svmc.svm_get_svr_probability(self.model)
-		if ret == 0:
-			raise TypeError, "not a regression model or probability information not available"
-		return ret
+	def is_probability_model(self):
+		return (libsvm.svm_check_probability_model(self) == 1)
 
-	def get_svr_pdf(self):
-		#get_svr_probability will handle error checking
-		sigma = self.get_svr_probability()
-		return lambda z: exp(-fabs(z)/sigma)/(2*sigma)
+	def get_sv_coef(self):
+		return [tuple(self.sv_coef[j][i] for j in xrange(self.nr_class - 1))
+				for i in xrange(self.l)]
 
+	def get_SV(self):
+		result = []
+		for sparse_sv in self.SV[:self.l]:
+			row = dict()
 
-	def save(self,filename):
-		svmc.svm_save_model(filename,self.model)
+			i = 0
+			while True:
+				row[sparse_sv[i].index] = sparse_sv[i].value
+				if sparse_sv[i].index == -1:
+					break
+				i += 1
 
-	def __del__(self):
-		svmc.svm_destroy_model(self.model)
+			result.append(row)
+		return result
 
+def toPyModel(model_ptr):
+	"""
+	toPyModel(model_ptr) -> svm_model
 
-def cross_validation(prob, param, fold):
-	if param.gamma == 0:
-		param.gamma = 1.0/prob.maxlen
-	dblarr = svmc.new_double(prob.size)
-	svmc.svm_cross_validation(prob.prob, param.param, fold, dblarr)
-	ret = _double_array_to_list(dblarr, prob.size)
-	svmc.delete_double(dblarr)
-	return ret
+	Convert a ctypes POINTER(svm_model) to a Python svm_model
+	"""
+	if bool(model_ptr) == False:
+		raise ValueError("Null pointer")
+	m = model_ptr.contents
+	m.__createfrom__ = 'C'
+	return m
+
+fillprototype(libsvm.svm_train, POINTER(svm_model), [POINTER(svm_problem), POINTER(svm_parameter)])
+fillprototype(libsvm.svm_cross_validation, None, [POINTER(svm_problem), POINTER(svm_parameter), c_int, POINTER(c_double)])
+
+fillprototype(libsvm.svm_save_model, c_int, [c_char_p, POINTER(svm_model)])
+fillprototype(libsvm.svm_load_model, POINTER(svm_model), [c_char_p])
+
+fillprototype(libsvm.svm_get_svm_type, c_int, [POINTER(svm_model)])
+fillprototype(libsvm.svm_get_nr_class, c_int, [POINTER(svm_model)])
+fillprototype(libsvm.svm_get_labels, None, [POINTER(svm_model), POINTER(c_int)])
+fillprototype(libsvm.svm_get_sv_indices, None, [POINTER(svm_model), POINTER(c_int)])
+fillprototype(libsvm.svm_get_nr_sv, c_int, [POINTER(svm_model)])
+fillprototype(libsvm.svm_get_svr_probability, c_double, [POINTER(svm_model)])
+
+fillprototype(libsvm.svm_predict_values, c_double, [POINTER(svm_model), POINTER(svm_node), POINTER(c_double)])
+fillprototype(libsvm.svm_predict, c_double, [POINTER(svm_model), POINTER(svm_node)])
+fillprototype(libsvm.svm_predict_probability, c_double, [POINTER(svm_model), POINTER(svm_node), POINTER(c_double)])
+
+fillprototype(libsvm.svm_free_model_content, None, [POINTER(svm_model)])
+fillprototype(libsvm.svm_free_and_destroy_model, None, [POINTER(POINTER(svm_model))])
+fillprototype(libsvm.svm_destroy_param, None, [POINTER(svm_parameter)])
+
+fillprototype(libsvm.svm_check_parameter, c_char_p, [POINTER(svm_problem), POINTER(svm_parameter)])
+fillprototype(libsvm.svm_check_probability_model, c_int, [POINTER(svm_model)])
+fillprototype(libsvm.svm_set_print_string_function, None, [PRINT_STRING_FUN])

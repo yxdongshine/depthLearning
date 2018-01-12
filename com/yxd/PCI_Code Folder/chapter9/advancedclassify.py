@@ -1,3 +1,4 @@
+#coding=utf-8
 class matchrow:
   def __init__(self,row,allnum=False):
     if allnum:
@@ -185,12 +186,15 @@ agesonly=loadmatch('agesonly.csv',allnum=True)
 #结束 单特征年龄线性分类
 
 #开始 多特征线性分类 数据缩放化
-numericalset=loadnumerical()
-scaledset,scalef=scaledata(numericalset)
-avgs=lineartrain(scaledset)
-print numericalset[0].data
-print numericalset[0].match
-print dpclassify(scalef(numericalset[0]),avgs)
+#numericalset=loadnumerical()
+#scaledset,scalef=scaledata(numericalset)
+#avgs=lineartrain(scaledset)
+#print numericalset[0].data
+#print numericalset[0].match
+#print dpclassify(scalef(numericalset[0]),avgs)
 #结束 多特征线性分类 数据缩放化
 
-#nlclassify([30,30],agesonly,0.1)
+#开始 多特征线性分类 数据缩放化
+offset=getoffset(agesonly)
+print nlclassify([30,30],agesonly,offset)
+#结束 多特征线性分类 数据缩放化
