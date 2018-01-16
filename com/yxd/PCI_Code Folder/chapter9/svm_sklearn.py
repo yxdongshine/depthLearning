@@ -7,6 +7,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 import matplotlib.pyplot as plt
+from sklearn.externals import joblib
 
 #匹配类
 class matchrow:
@@ -75,6 +76,8 @@ def loadnumerical():
 #    5.将数据拆分成训练集和测试集
 #    6.预测值
 #       将数据随机拆分一部分数据出来预测
+#    7.画图展示最优参数与默认值比较
+#    8.保存加载模型
 
 
 
@@ -146,6 +149,14 @@ y_pre_rbf = clf_rbf.predict(X_test)
 clf_rbf_score=clf_rbf.score(X_test, y_test)#计算得分
 print(clf_rbf_score)
 
+#保存/加载模型
+joblib.dump(clf_rbf, "svm_model.m")
+clf_rbf_load = joblib.load("svm_model.m")
+#测试加载模型
+y_pre_rbf_load = clf_rbf_load.predict(X_test)
+clf_rbf_score_load=clf_rbf_load.score(X_test, y_test)#计算得分
+print(clf_rbf_score_load)
+
 #画图展示预测真实值和线性，rbf
 plt.figure(2, figsize=(80, 6))
 plt.clf()
@@ -158,3 +169,4 @@ plt.yticks((y_test))
 plt.xlabel('x')
 plt.ylabel('y')
 plt.show()
+
