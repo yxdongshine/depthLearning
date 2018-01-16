@@ -9,7 +9,7 @@ class matchrow:
 
 def loadmatch(f,allnum=False):
   rows=[]
-  for line in file(f):
+  for line in open(f):
     rows.append(matchrow(line.split(','),allnum))
   return rows
  
@@ -77,7 +77,8 @@ def matchcount(interest1,interest2):
 
 yahookey="dj0yJmk9eEhQSGhCN1Y0aGtQJmQ9WVdrOVpYTTBkRlEzTjJjbWNHbzlNQS0tJnM9Y29uc3VtZXJzZWNyZXQmeD0xNA--"
 from xml.dom.minidom import parseString
-from urllib import urlopen,quote_plus
+from urllib.request import urlopen
+from urllib.parse import quote
 
 loc_cache={}
 def getlocation(address):
@@ -186,15 +187,59 @@ agesonly=loadmatch('agesonly.csv',allnum=True)
 #结束 单特征年龄线性分类
 
 #开始 多特征线性分类 数据缩放化
-#numericalset=loadnumerical()
-#scaledset,scalef=scaledata(numericalset)
+numericalset=loadnumerical()
+scaledset,scalef=scaledata(numericalset)
 #avgs=lineartrain(scaledset)
 #print numericalset[0].data
 #print numericalset[0].match
 #print dpclassify(scalef(numericalset[0]),avgs)
-#结束 多特征线性分类 数据缩放化
+#结束 多特征线性分类
 
-#开始 多特征线性分类 数据缩放化
-offset=getoffset(agesonly)
-print nlclassify([30,30],agesonly,offset)
-#结束 多特征线性分类 数据缩放化
+#开始
+#offset=getoffset(agesonly)
+#print nlclassify([30,30],agesonly,offset)
+#结束
+
+#开始 测试svm sklearn
+#from sklearn import svm
+#from sklearn.svm import SVC
+#import numpy as np
+#数据集合
+#X = np.array([
+#  [1,0,1],
+#  [-1, 0, -1]
+#])
+#y = np.array([1,-1])
+#训练
+#clf = SVC()
+#clf.fit(X, y)
+#预测
+#y_t = clf.predict([1,-1,1])
+#print(y_t )
+#评分
+#print(clf.score([1,-1,1],y_t))
+#结束
+
+#开始 对缩放化的转换后的数据 训练
+from sklearn import svm
+from sklearn.svm import SVC
+import numpy as np
+answers,inputs = [r.match for r in scaledset],[r.data for r in scaledset]
+#开始训练
+clf = SVC()
+print(clf)
+#交叉验证
+from sklearn.model_selection import cross_val_score
+scores = cross_val_score(clf, inputs, answers, cv=5)
+print(scores)
+
+clf.fit(inputs, answers)
+#预测
+y_t1 = clf.predict(np.array(scalef([28.0,-1,-1,26.0,-1,1,2,0.8])).reshape(1, -1))
+print(y_t1)
+y_t2 = clf.predict(np.array(scalef([28.0,-1,1,26.0,-1,1,2,0.8])).reshape(1, -1))
+print(y_t2)
+
+#结束
+
+
