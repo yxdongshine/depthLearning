@@ -1,3 +1,4 @@
+#coding=utf-8
 # Linear Support Vector Machine: Soft Margin
 # ----------------------------------
 #

@@ -161,4 +161,4 @@ class searchnet:
               self.setstrength(self.hiddenids[j],self.urlids[k],1,self.wo[j][k])
       self.con.commit()
 
-    trainquery()
+#    trainquery()

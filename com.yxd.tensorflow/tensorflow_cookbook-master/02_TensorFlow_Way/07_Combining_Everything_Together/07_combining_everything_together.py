@@ -47,7 +47,7 @@ my_add = tf.add(my_mult, b)
 my_output = tf.subtract(x1_data, my_add)
 
 # Add classification loss (cross entropy)
-xentropy = tf.nn.sigmoid_cross_entropy_with_logits(logits=my_output, labels=y_target)
+xentropy = tf.nn.sigmoid_cross_entropy_with_logits(logits=my_output, targets=y_target)
 
 # Create Optimizer
 my_opt = tf.train.GradientDescentOptimizer(0.05)

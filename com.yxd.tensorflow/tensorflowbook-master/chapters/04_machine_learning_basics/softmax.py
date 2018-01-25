@@ -1,6 +1,7 @@
 # Softmax example in TF using the classical Iris dataset
 # Download iris.data from https://archive.ics.uci.edu/ml/datasets/Iris
 # Be sure to remove the last empty line of it before running the example
+#https://archive.ics.uci.edu/ml/machine-learning-databases/iris/
 
 import tensorflow as tf
 import os
@@ -37,7 +38,7 @@ def read_csv(batch_size, file_name, record_defaults):
     # batch actually reads the file and loads "batch_size" rows in a single tensor
     return tf.train.shuffle_batch(decoded,
                                   batch_size=batch_size,
-                                  capacity=batch_size * 50,
+                                  capacity=batch_size * 5,
                                   min_after_dequeue=batch_size)
 
 
@@ -86,11 +87,11 @@ with tf.Session() as sess:
     threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
     # actual training loop
-    training_steps = 1000
+    training_steps = 1
     for step in range(training_steps):
         sess.run([train_op])
         # for debugging and learning purposes, see how the loss gets decremented thru training steps
-        if step % 10 == 0:
+        if step % 1 == 0:
             print ("loss: ", sess.run([total_loss]))
     evaluate(sess, X, Y)
 

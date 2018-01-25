@@ -1,10 +1,11 @@
 #coding=utf-8
-import urllib2
+import urllib.request
 from bs4 import BeautifulSoup,Tag,CData;
-from urlparse import urljoin
+from urllib.parse import urljoin
 #http://blog.csdn.net/u013045749/article/details/46119685
 from sqlite3 import dbapi2 as sqlite
 import nn
+import re
 
 mynet=nn.searchnet('nn.db')
 
@@ -40,7 +41,7 @@ class crawler:
   # Index an individual page
   def addtoindex(self,url,soup):
     if self.isindexed(url): return
-    print 'Indexing '+url
+    print( 'Indexing '+url)
   
     # Get the individual words
     text=self.gettextonly(soup)
@@ -53,6 +54,7 @@ class crawler:
     for i in range(len(words)):
       word=words[i]
       if word in ignorewords: continue
+      if word=='' : continue
       wordid=self.getentryid('wordlist','word',word)
       self.con.execute("insert into wordlocation(urlid,wordid,location) values (%d,%d,%d)" % (urlid,wordid,i))
   
@@ -61,7 +63,7 @@ class crawler:
   # Extract the text from an HTML page (no tags)
   def gettextonly(self,soup):
     v=soup.string
-    if v==Null:   
+    if v==None:
       c=soup.contents
       resulttext=''
       for t in c:
@@ -73,7 +75,7 @@ class crawler:
 
   # Seperate the words by any non-whitespace character
   def separatewords(self,text):
-    splitter=re.compile('\\W*')
+    splitter=re.compile(r'(\w+) (\w+)(?P<sign>.*)')
     return [s.lower() for s in splitter.split(text) if s!='']
 
     
@@ -102,9 +104,9 @@ class crawler:
       newpages={}
       for page in pages:
         try:
-          c=urllib2.urlopen(page)
+          c=urllib.request.urlopen(page)
         except:
-          print "Could not open %s" % page
+          print( "Could not open %s" % page)
           continue
         try:
           soup = BeautifulSoup(c.read(), "html")
@@ -123,7 +125,7 @@ class crawler:
   
           self.dbcommit()
         except:
-          print "Could not parse page %s" % page
+          print( "Could not parse page %s" % page)
 
       pages=newpages
 
@@ -154,7 +156,7 @@ class crawler:
     self.dbcommit()
     
     for i in range(iterations):
-      print "Iteration %d" % (i)
+      print( "Iteration %d" % (i))
       for (urlid,) in self.con.execute('select rowid from urllist'):
         pr=0.15
         
@@ -209,7 +211,7 @@ class searcher:
 
     # Create the query from the separate parts
     fullquery='select %s from %s where %s' % (fieldlist,tablelist,clauselist)
-    print fullquery
+    print( fullquery)
     cur=self.con.execute(fullquery)
     rows=[row for row in cur]
 
@@ -241,7 +243,7 @@ class searcher:
     rankedscores.sort()
     rankedscores.reverse()
     for (score,urlid) in rankedscores[0:10]:
-      print '%f\t%s' % (score,self.geturlname(urlid))
+      print( '%f\t%s' % (score,self.geturlname(urlid)))
     return wordids,[r[1] for r in rankedscores[0:10]]
 
   def normalizescores(self,scores,smallIsBetter=0):
@@ -312,7 +314,7 @@ class searcher:
 #开始调用
 crawler=crawler('searchindex.db')
 #crawler.createindextables()
-pagelist=[['http://en.xjtu.edu.cn/'],
+pagelist=[['https://www.bejson.com/'],
           ['http://www.lib.xjtu.edu.cn/'],
           ['http://en.wikipedia.org/wiki/Xi%27an_Jiaotong_University']]
 crawler.crawl(pagelist[0])

@@ -52,7 +52,7 @@ for i in range(100):
         temp_loss = sess.run(loss, feed_dict={x_data: rand_x, y_target: rand_y})
         print('Loss = ' + str(temp_loss))
         loss_stochastic.append(temp_loss)
-        
+
 
 # Batch Training:
 # Re-initialize graph

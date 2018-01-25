@@ -29,10 +29,10 @@ def train(total_loss):
 
 
 def evaluate(sess, X, Y):
-    print sess.run(inference([[50., 20.]])) # ~ 303
-    print sess.run(inference([[50., 70.]])) # ~ 256
-    print sess.run(inference([[90., 20.]])) # ~ 303
-    print sess.run(inference([[90., 70.]])) # ~ 256
+    print( sess.run(inference([[50., 20.]]))) # ~ 303
+    print( sess.run(inference([[50., 70.]]))) # ~ 256
+    print( sess.run(inference([[90., 20.]]))) # ~ 303
+    print( sess.run(inference([[90., 70.]])))# ~ 256
 
 # Launch the graph in a session, setup boilerplate
 with tf.Session() as sess:
@@ -52,9 +52,9 @@ with tf.Session() as sess:
     for step in range(training_steps):
         sess.run([train_op])
         if step % 1000 == 0:
-            print "Epoch:", step, " loss: ", sess.run(total_loss)
+            print( "Epoch:", step, " loss: ", sess.run(total_loss))
 
-    print "Final model W=", sess.run(W), "b=", sess.run(b)
+    print( "Final model W=", sess.run(W), "b=", sess.run(b))
     evaluate(sess, X, Y)
 
     coord.request_stop()
