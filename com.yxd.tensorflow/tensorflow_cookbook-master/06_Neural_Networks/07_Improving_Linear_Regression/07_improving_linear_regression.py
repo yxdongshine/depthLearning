@@ -45,6 +45,11 @@ with open(birth_weight_file, newline='') as csvfile:
 
 birth_data = [[float(x) for x in row] for row in birth_data]
 
+
+for x in birth_data:
+    if len(x) <= 0:
+        birth_data.remove(x)
+
 # Pull out target variable
 y_vals = np.array([x[1] for x in birth_data])
 # Pull out predictor variables (not id, not target, and not birthweight)
@@ -116,7 +121,7 @@ b3 = init_variable(shape=[1])
 final_output = logistic(logistic_layer2, A3, b3, activation=False)
 
 # Declare loss function (Cross Entropy loss)
-loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=final_output, labels=y_target))
+loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=final_output, targets=y_target))
 
 # Declare optimizer
 my_opt = tf.train.AdamOptimizer(learning_rate = 0.002)

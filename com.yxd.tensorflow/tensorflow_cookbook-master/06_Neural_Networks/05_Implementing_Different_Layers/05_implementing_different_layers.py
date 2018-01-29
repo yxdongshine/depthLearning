@@ -126,26 +126,26 @@ feed_dict = {x_input_1d: data_1d}
 print('>>>> 1D Data <<<<')
 
 # Convolution Output
-print('Input = array of length %d' % (x_input_1d.shape.as_list()[0]))
+print('Input = array of length %d' % (x_input_1d.get_shape().as_list()[0]))
 print('Convolution w/ filter, length = %d, stride size = %d, results in an array of length %d:' % 
-      (conv_size,stride_size,my_convolution_output.shape.as_list()[0]))
+      (conv_size,stride_size,my_convolution_output.get_shape().as_list()[0]))
 print(sess.run(my_convolution_output, feed_dict=feed_dict))
 
 # Activation Output
-print('\nInput = above array of length %d' % (my_convolution_output.shape.as_list()[0]))
-print('ReLU element wise returns an array of length %d:' % (my_activation_output.shape.as_list()[0]))
+print('\nInput = above array of length %d' % (my_convolution_output.get_shape().as_list()[0]))
+print('ReLU element wise returns an array of length %d:' % (my_activation_output.get_shape().as_list()[0]))
 print(sess.run(my_activation_output, feed_dict=feed_dict))
 
 # Max Pool Output
-print('\nInput = above array of length %d' % (my_activation_output.shape.as_list()[0]))
+print('\nInput = above array of length %d' % (my_activation_output.get_shape().as_list()[0]))
 print('MaxPool, window length = %d, stride size = %d, results in the array of length %d' %
-     (maxpool_size,stride_size,my_maxpool_output.shape.as_list()[0]))
+     (maxpool_size,stride_size,my_maxpool_output.get_shape().as_list()[0]))
 print(sess.run(my_maxpool_output, feed_dict=feed_dict))
 
 # Fully Connected Output
-print('\nInput = above array of length %d' % (my_maxpool_output.shape.as_list()[0]))
+print('\nInput = above array of length %d' % (my_maxpool_output.get_shape().as_list()[0]))
 print('Fully connected layer on all 4 rows with %d outputs:' % 
-      (my_full_output.shape.as_list()[0]))
+      (my_full_output.get_shape().as_list()[0]))
 print(sess.run(my_full_output, feed_dict=feed_dict))
 
 
@@ -259,24 +259,24 @@ feed_dict = {x_input_2d: data_2d}
 print('\n>>>> 2D Data <<<<')
 
 # Convolution Output
-print('Input = %s array' % (x_input_2d.shape.as_list()))
+print('Input = %s array' % (x_input_2d.get_shape().as_list()))
 print('%s Convolution, stride size = [%d, %d] , results in the %s array' % 
-      (my_filter.get_shape().as_list()[:2],conv_stride_size,conv_stride_size,my_convolution_output.shape.as_list()))
+      (my_filter.get_shape().as_list()[:2],conv_stride_size,conv_stride_size,my_convolution_output.get_shape().as_list()))
 print(sess.run(my_convolution_output, feed_dict=feed_dict))
 
 # Activation Output
-print('\nInput = the above %s array' % (my_convolution_output.shape.as_list()))
-print('ReLU element wise returns the %s array' % (my_activation_output.shape.as_list()))
+print('\nInput = the above %s array' % (my_convolution_output.get_shape().as_list()))
+print('ReLU element wise returns the %s array' % (my_activation_output.get_shape().as_list()))
 print(sess.run(my_activation_output, feed_dict=feed_dict))
 
 # Max Pool Output
-print('\nInput = the above %s array' % (my_activation_output.shape.as_list()))
+print('\nInput = the above %s array' % (my_activation_output.get_shape().as_list()))
 print('MaxPool, stride size = [%d, %d], results in %s array' % 
-      (maxpool_stride_size,maxpool_stride_size,my_maxpool_output.shape.as_list()))
+      (maxpool_stride_size,maxpool_stride_size,my_maxpool_output.get_shape().as_list()))
 print(sess.run(my_maxpool_output, feed_dict=feed_dict))
 
 # Fully Connected Output
-print('\nInput = the above %s array' % (my_maxpool_output.shape.as_list()))
+print('\nInput = the above %s array' % (my_maxpool_output.get_shape().as_list()))
 print('Fully connected layer on all %d rows results in %s outputs:' % 
-      (my_maxpool_output.shape.as_list()[0],my_full_output.shape.as_list()[0]))
+      (my_maxpool_output.get_shape().as_list()[0],my_full_output.get_shape().as_list()[0]))
 print(sess.run(my_full_output, feed_dict=feed_dict))

@@ -58,9 +58,12 @@ with open(birth_weight_file, newline='') as csvfile:
 
 birth_data = [[float(x) for x in row] for row in birth_data]
 
+for x in birth_data:
+    if len(x) <= 0:
+        birth_data.remove(x)
 
 # Extract y-target (birth weight)
-y_vals = np.array([x[8] for x in birth_data])
+y_vals = np.array([ x[8] for x in birth_data])
 
 # Filter for features of interest
 cols_of_interest = ['AGE', 'LWT', 'RACE', 'SMOKE', 'PTL', 'HT', 'UI']

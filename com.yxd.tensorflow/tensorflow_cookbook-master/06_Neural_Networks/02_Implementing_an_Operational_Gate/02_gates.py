@@ -75,7 +75,6 @@ x_val = 5.
 x_data = tf.placeholder(dtype=tf.float32)
 
 two_gate = tf.add(tf.multiply(a, x_data), b)
-
 # Declare the loss function as the difference between
 # the output and a target value, 50.
 loss = tf.square(tf.subtract(two_gate, 50.))
