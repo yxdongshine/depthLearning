@@ -172,7 +172,7 @@ def rotatematrix(data):
 
 import random
 
-def kcluster(rows,distance=pearson,k=4):
+def kcluster(rows,distance=pearson,k=1):
   # Determine the minimum and maximum values for each point
   ranges=[(min([row[i] for row in rows]),max([row[i] for row in rows])) 
   for i in range(len(rows[0]))]
@@ -283,4 +283,5 @@ def draw2d(data,labels,jpeg='mds2d.jpg'):
 
 
 blogname,words,data = readfile('blogdata1.txt')
-clust = hcluster(data)
+#clust = hcluster(data)
+kcluster(data)
